@@ -3,11 +3,16 @@ package controller;
 import app.DataAdapter;
 import app.SheetReader;
 import javafx.event.ActionEvent;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -20,11 +25,12 @@ import java.util.List;
 
 public class GUIController {
 
-    public Button fileSelect;
+    public Button fileSelectButton;
     public TextField filepath;
     public ChoiceBox<String> studentSelector;
     public ListView<Node> questionTableView;
-    public ListView<String> answerTableView;
+    public ListView<Node> answerTableView;
+    public Button setRightAnswersButton;
 
     private Stage stage;
 
@@ -63,7 +69,7 @@ public class GUIController {
     private void fillAnswerTableView(Student student) {
         answerTableView.getItems().clear();
         testController.getQuestionToAnswers()
-                .forEach((key, value) -> answerTableView.getItems().add(value.get(student.getId())));
+                .forEach((key, value) -> answerTableView.getItems().add(new Text(value.get(student.getId()))));
     }
 
     private void fillQuestionTableView(List<Question> questions) {
@@ -89,7 +95,7 @@ public class GUIController {
         this.stage = stage;
     }
 
-    public void selectStudent(ActionEvent actionEvent) {
+    public void selectStudent() {
         String selection = studentSelector.getSelectionModel().getSelectedItem();
         if (selection == null) {
             return;
@@ -98,5 +104,16 @@ public class GUIController {
         testController.getStudentList().stream()
                 .filter(student -> student.getName().equals(studentName))
                 .findFirst().ifPresent(this::fillAnswerTableView);
+    }
+
+    public void setRightAnswersMode(ActionEvent actionEvent) {
+        if (setRightAnswersButton.getText().equals("Ustaw poprawne odp")) {
+            setRightAnswersButton.setText("Wróć");
+            answerTableView.getItems().clear();
+
+        } else {
+            setRightAnswersButton.setText("Ustaw poprawne odp");
+            selectStudent();
+        }
     }
 }
