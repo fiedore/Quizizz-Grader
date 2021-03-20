@@ -30,8 +30,8 @@ public class TestController {
     }
 
     public List<String> getAnswersToQuestion(int questionID) {
-        Question question = questionList.stream().filter(question1 -> question1.getId() == questionID).findFirst().orElse(new Question());
-        return questionToAnswers.get(question);
+        Question questionObject = questionList.stream().filter(question -> question.getId() == questionID).findFirst().orElse(new Question());
+        return questionToAnswers.get(questionObject);
     }
 
     public Map<Question, String> getAnswersOfStudent(int studentID) {

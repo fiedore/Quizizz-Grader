@@ -9,9 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -21,7 +19,7 @@ import model.Student;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 public class GUIController {
 
@@ -35,6 +33,8 @@ public class GUIController {
     private Stage stage;
 
     private TestController testController;
+    private final List<Node> rightAnswersChoiceBoxes = new ArrayList<>();
+    private String[] rightAnswers;
 
     public void selectFile(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
@@ -60,6 +60,8 @@ public class GUIController {
         testController = new TestController(questions, students);
         testController.mapQuestionsToAnswers(dataAdapter.extractAnswers());
 
+        rightAnswersChoiceBoxes.clear();
+        rightAnswers = new String[questions.size()];
         fillSelector(students);
         fillQuestionTableView(questions);
         fillAnswerTableView(students.get(0));
@@ -109,11 +111,45 @@ public class GUIController {
     public void setRightAnswersMode(ActionEvent actionEvent) {
         if (setRightAnswersButton.getText().equals("Ustaw poprawne odp")) {
             setRightAnswersButton.setText("Wróć");
+            studentSelector.setDisable(true);
             answerTableView.getItems().clear();
+
+            if (rightAnswersChoiceBoxes.isEmpty()) {
+                for (int i = 0; i < testController.getQuestionList().size(); i++) {
+                    ChoiceBox<String> answersChoiceBox = fillChoiceBoxWithPossibleAnswers(i);
+                    answersChoiceBox.getProperties().put("i", i);
+                    answersChoiceBox.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, null, new BorderWidths(0.1))));
+                    answersChoiceBox.setOnAction(this::setRightAnswer);
+                    rightAnswersChoiceBoxes.add(answersChoiceBox);
+                }
+
+            }
+
+            for (int i = 0; i < testController.getQuestionList().size(); i++) {
+                answerTableView.getItems().add(rightAnswersChoiceBoxes.get(i));
+            }
 
         } else {
             setRightAnswersButton.setText("Ustaw poprawne odp");
+            studentSelector.setDisable(false);
             selectStudent();
+            System.out.println("rightAnswers=" + Arrays.toString(rightAnswers));
         }
     }
+
+
+    private ChoiceBox<String> fillChoiceBoxWithPossibleAnswers(int i) {
+        ChoiceBox<String> choiceBox = new ChoiceBox<>();
+        SortedSet<String> possibleAnswers = new TreeSet<>(testController.getAnswersToQuestion(i));
+        choiceBox.getItems().addAll(possibleAnswers);
+        return choiceBox;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setRightAnswer(ActionEvent actionEvent) {
+        ChoiceBox<String> choiceBox = (ChoiceBox<String>) actionEvent.getSource();
+        int i = (int) choiceBox.getProperties().get("i");
+        rightAnswers[i] = choiceBox.getValue();
+    }
+
 }
