@@ -47,7 +47,7 @@ public class GUIController {
 
     private void processFile(File file) throws IOException {
         filepath.setText(file.getAbsolutePath());
-        DataAdapter dataAdapter = new DataAdapter(SheetReader.getData("siur.xlsx"));
+        DataAdapter dataAdapter = new DataAdapter(SheetReader.getData(file.getPath()));
         List<Student> students = dataAdapter.extractStudents();
         List<Question> questions = dataAdapter.extractQuestions();
 
@@ -71,7 +71,6 @@ public class GUIController {
         questionTableView.setStyle("-fx-fit-to-width: true;");
         for (Question question : questions) {
             Text questionText = new Text((question.getId() + 1) + ". " + question.getText());
-            questionText.wrappingWidthProperty().bind(questionTableView.widthProperty().subtract(5));
             questionTableView.getItems().add(questionText);
         }
     }
