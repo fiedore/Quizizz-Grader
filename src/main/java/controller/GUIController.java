@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import model.Question;
 import model.Student;
 
@@ -90,7 +91,9 @@ public class GUIController {
                 .forEach((key, value) -> {
                     String answerString = value.get(student.getId());
                     Label answer = new Label(answerString);
-                    answer.setTooltip(new Tooltip(answerString));
+                    Tooltip tooltip = new Tooltip(answerString);
+                    tooltip.setShowDelay(Duration.millis(100));
+                    answer.setTooltip(tooltip);
                     items.add(answer);
                 });
     }
@@ -102,7 +105,9 @@ public class GUIController {
         for (Question question : questions) {
             String questionString = (question.getId() + 1) + ". " + question.getText();
             Label questionText = new Label(questionString);
-            questionText.setTooltip(new Tooltip(questionString));
+            Tooltip tooltip = new Tooltip(questionString);
+            tooltip.setShowDelay(Duration.millis(100));
+            questionText.setTooltip(tooltip);
             questionListView.getItems().add(questionText);
         }
     }
