@@ -2,13 +2,10 @@ package controller;
 
 import app.DataAdapter;
 import app.SheetReader;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -26,8 +23,8 @@ public class GUIController {
     public Button fileSelectButton;
     public TextField filepath;
     public ChoiceBox<String> studentSelector;
-    public ListView<Node> questionTableView;
-    public ListView<Node> answerTableView;
+    public ListView<Node> questionListView;
+    public ListView<Node> answerListView;
     public Button setRightAnswersButton;
 
     private Stage stage;
@@ -36,7 +33,7 @@ public class GUIController {
     private final List<Node> rightAnswersChoiceBoxes = new ArrayList<>();
     private String[] rightAnswers;
 
-    public void selectFile(ActionEvent actionEvent) {
+    public void selectFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Wybierz plik excela z ocenami");
         fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("Arkusz Excel", "*.xlsx"));
@@ -65,21 +62,48 @@ public class GUIController {
         fillSelector(students);
         fillQuestionTableView(questions);
         fillAnswerTableView(students.get(0));
+        bindScrollbars(questionListView, answerListView);
+        bindSelections(questionListView, answerListView);
 
+    }
+
+    private void bindSelections(ListView<Node> listView1, ListView<Node> listView2) {
+        listView1.selectionModelProperty().bindBidirectional(listView2.selectionModelProperty());
+    }
+
+    private void bindScrollbars(ListView<Node> listView1, ListView<Node> listView2) {
+        Node n1 = listView1.lookup(".scroll-bar");
+        if (n1 instanceof ScrollBar) {
+            final ScrollBar bar1 = (ScrollBar) n1;
+            Node n2 = listView2.lookup(".scroll-bar");
+            if (n2 instanceof ScrollBar) {
+                final ScrollBar bar2 = (ScrollBar) n2;
+                bar1.valueProperty().bindBidirectional(bar2.valueProperty());
+            }
+        }
     }
 
     private void fillAnswerTableView(Student student) {
-        answerTableView.getItems().clear();
+        ObservableList<Node> items = answerListView.getItems();
+        items.clear();
         testController.getQuestionToAnswers()
-                .forEach((key, value) -> answerTableView.getItems().add(new Text(value.get(student.getId()))));
+                .forEach((key, value) -> {
+                    String answerString = value.get(student.getId());
+                    Label answer = new Label(answerString);
+                    answer.setTooltip(new Tooltip(answerString));
+                    items.add(answer);
+                });
     }
 
     private void fillQuestionTableView(List<Question> questions) {
-        questionTableView.getItems().clear();
-        questionTableView.setStyle("-fx-fit-to-width: true;");
+        questionListView.getItems().clear();
+
+        questionListView.setStyle("-fx-fit-to-width: true;");
         for (Question question : questions) {
-            Text questionText = new Text((question.getId() + 1) + ". " + question.getText());
-            questionTableView.getItems().add(questionText);
+            String questionString = (question.getId() + 1) + ". " + question.getText();
+            Label questionText = new Label(questionString);
+            questionText.setTooltip(new Tooltip(questionString));
+            questionListView.getItems().add(questionText);
         }
     }
 
@@ -108,11 +132,11 @@ public class GUIController {
                 .findFirst().ifPresent(this::fillAnswerTableView);
     }
 
-    public void setRightAnswersMode(ActionEvent actionEvent) {
+    public void setRightAnswersMode() {
         if (setRightAnswersButton.getText().equals("Ustaw poprawne odp")) {
             setRightAnswersButton.setText("Wróć");
             studentSelector.setDisable(true);
-            answerTableView.getItems().clear();
+            answerListView.getItems().clear();
 
             if (rightAnswersChoiceBoxes.isEmpty()) {
                 for (int i = 0; i < testController.getQuestionList().size(); i++) {
@@ -126,7 +150,7 @@ public class GUIController {
             }
 
             for (int i = 0; i < testController.getQuestionList().size(); i++) {
-                answerTableView.getItems().add(rightAnswersChoiceBoxes.get(i));
+                answerListView.getItems().add(rightAnswersChoiceBoxes.get(i));
             }
 
         } else {
