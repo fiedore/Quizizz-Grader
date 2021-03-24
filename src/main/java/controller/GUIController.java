@@ -75,7 +75,7 @@ public class GUIController {
         if (Arrays.asList(preferences.keys()).contains(filename)) {
             String rightAnswersArrayString = preferences.get(filename, null);
             if (rightAnswersArrayString != null) {
-                rightAnswers = rightAnswersArrayString.substring(1, rightAnswersArrayString.length() - 1).split(", ");
+                rightAnswers = rightAnswersArrayString.split("\\|");
             }
         }
 
@@ -83,9 +83,12 @@ public class GUIController {
         fillQuestionListView(questions);
         fillPointsListView(questions.size());
         fillAnswerListView(students.get(0));
+
         bindScrollbars(questionListView, answerListView);
         bindScrollbars(questionListView, pointsListView);
+
         bindSelections(questionListView, answerListView);
+        bindSelections(questionListView, pointsListView);
 
     }
 
@@ -118,7 +121,7 @@ public class GUIController {
 
             choiceBox.getProperties().put("i", i);
             choiceBox.setOnAction(this::setPoints);
-            choiceBox.setOnContextMenuRequested( event -> {
+            choiceBox.setOnShown( event -> {
                 @SuppressWarnings("unchecked")
                 ChoiceBox<String> box = (ChoiceBox<String>) event.getSource();
                 int boxIndex = (Integer) box.getProperties().get("i");
@@ -258,8 +261,9 @@ public class GUIController {
         ChoiceBox<String> choiceBox = (ChoiceBox<String>) actionEvent.getSource();
         int i = (int) choiceBox.getProperties().get("i");
         rightAnswers[i] = choiceBox.getValue();
-        System.out.printf("Putting this into preferences: %s - %s%n", filename, Arrays.toString(rightAnswers));
-        preferences.put(filename, Arrays.toString(rightAnswers));
+        String jointAnswers = String.join("|", rightAnswers);
+        System.out.printf("Putting this into preferences: %s - %s%n", filename, jointAnswers);
+        preferences.put(filename, jointAnswers);
     }
 
 }
