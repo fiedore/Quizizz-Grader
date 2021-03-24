@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<?import java.net.URL?>
 <AnchorPane maxHeight="650.0" prefHeight="650.0" prefWidth="1250.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.GUIController">
     <ChoiceBox fx:id="studentSelector" layoutX="14.0" layoutY="25.0" onAction="#selectStudent" prefWidth="150.0" />
-    <ListView fx:id="questionListView" layoutX="173.0" layoutY="25.0" prefHeight="550.0" prefWidth="513.0" />
+    <ListView fx:id="questionListView" layoutX="232.0" layoutY="25.0" prefHeight="550.0" prefWidth="454.0" />
     <ListView fx:id="answerListView" layoutX="686.0" layoutY="25.0" prefHeight="550.0" prefWidth="492.0" />
     <Button fx:id="fileSelectButton" layoutX="1073.0" layoutY="585.0" mnemonicParsing="false" onAction="#selectFile" prefHeight="25.0" prefWidth="93.0" text="Wybierz plik" />
     <TextField fx:id="filepath" disable="true" editable="false" layoutX="173.0" layoutY="585.0" prefHeight="25.0" prefWidth="900.0" />
    <Button fx:id="setRightAnswersButton" layoutX="14.0" layoutY="60.0" mnemonicParsing="false" onAction="#setRightAnswersMode" prefHeight="25.0" prefWidth="150.0" text="Ustaw poprawne odp" />
+   <ListView fx:id="pointsListView" layoutX="173.0" layoutY="25.0" prefHeight="550.0" prefWidth="59.0" />
 <stylesheets>
-    <URL value="@GUI.css"/>
+    <URL value="@GUI.css" />
 </stylesheets>
 </AnchorPane>

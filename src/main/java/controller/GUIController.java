@@ -18,39 +18,50 @@ import model.Student;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 public class GUIController {
 
+    public static final String POINTS_SUFFIX = "_points";
     public Button fileSelectButton;
     public TextField filepath;
     public ChoiceBox<String> studentSelector;
     public ListView<Node> questionListView;
     public ListView<Node> answerListView;
     public Button setRightAnswersButton;
+    public ListView<Node> pointsListView;
 
     private Stage stage;
 
     private TestController testController;
     private final List<Node> rightAnswersChoiceBoxes = new ArrayList<>();
     private String[] rightAnswers;
+    private String[] points;
+    private String filename;
+    private Preferences preferences;
 
     public void selectFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Wybierz plik excela z ocenami");
-        fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("Arkusz Excel", "*.xlsx"));
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arkusz Excel - wyniki z Quizizz", "*.xlsx"));
+        preferences = Preferences.userRoot().node(this.getClass().getName());
+        fileChooser.setInitialDirectory(new File(preferences.get("last directory", System.getProperty("user.dir"))));
         File file = fileChooser.showOpenDialog(stage);
         System.out.println(file);
         if (file != null) {
             try {
                 processFile(file);
-            } catch (IOException e) {
+            } catch (IOException | BackingStoreException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void processFile(File file) throws IOException {
+    private void processFile(File file) throws IOException, BackingStoreException {
         filepath.setText(file.getAbsolutePath());
+        preferences.put("last directory", String.valueOf(file.getParentFile()));
+        filename = file.getName();
         DataAdapter dataAdapter = new DataAdapter(SheetReader.getData(file.getPath()));
         List<Student> students = dataAdapter.extractStudents();
         List<Question> questions = dataAdapter.extractQuestions();
@@ -60,12 +71,75 @@ public class GUIController {
 
         rightAnswersChoiceBoxes.clear();
         rightAnswers = new String[questions.size()];
+
+        if (Arrays.asList(preferences.keys()).contains(filename)) {
+            String rightAnswersArrayString = preferences.get(filename, null);
+            if (rightAnswersArrayString != null) {
+                rightAnswers = rightAnswersArrayString.substring(1, rightAnswersArrayString.length() - 1).split(", ");
+            }
+        }
+
         fillSelector(students);
-        fillQuestionTableView(questions);
-        fillAnswerTableView(students.get(0));
+        fillQuestionListView(questions);
+        fillPointsListView(questions.size());
+        fillAnswerListView(students.get(0));
         bindScrollbars(questionListView, answerListView);
+        bindScrollbars(questionListView, pointsListView);
         bindSelections(questionListView, answerListView);
 
+    }
+
+    private void fillPointsListView(int size) throws BackingStoreException {
+        ObservableList<Node> items = pointsListView.getItems();
+        boolean hasPreference;
+
+        hasPreference = Arrays.stream(preferences.keys()).anyMatch(s -> s.equals(filename + POINTS_SUFFIX));
+
+        if (hasPreference) {
+            String pointsArrayString = preferences.get(filename + POINTS_SUFFIX, "");
+            points = pointsArrayString.substring(1, pointsArrayString.length() - 1).split(", ");
+        } else {
+            points = new String[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            ChoiceBox<String> choiceBox = new ChoiceBox<>();
+
+            for (int j = 1; j <= 5; j++) {
+                choiceBox.getItems().add(j + "");
+            }
+
+            if (hasPreference) {
+                choiceBox.setValue(points[i]);
+            } else {
+                choiceBox.setValue("1");
+                points[i] = choiceBox.getValue();
+            }
+
+            choiceBox.getProperties().put("i", i);
+            choiceBox.setOnAction(this::setPoints);
+            choiceBox.setOnContextMenuRequested( event -> {
+                @SuppressWarnings("unchecked")
+                ChoiceBox<String> box = (ChoiceBox<String>) event.getSource();
+                int boxIndex = (Integer) box.getProperties().get("i");
+                questionListView.getSelectionModel().select(boxIndex);
+                answerListView.getSelectionModel().select(boxIndex);
+            });
+            items.add(choiceBox);
+        }
+
+        if (!hasPreference) {
+            preferences.put(filename + POINTS_SUFFIX, Arrays.toString(points));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setPoints(ActionEvent actionEvent) {
+        ChoiceBox<String> choiceBox = (ChoiceBox<String>) actionEvent.getSource();
+        int i = (int) choiceBox.getProperties().get("i");
+        points[i] = choiceBox.getValue();
+        System.out.printf("Putting this into preferences: %s - %s%n", filename + POINTS_SUFFIX, Arrays.toString(points));
+        preferences.put(filename + POINTS_SUFFIX, Arrays.toString(points));
     }
 
     private void bindSelections(ListView<Node> listView1, ListView<Node> listView2) {
@@ -84,7 +158,7 @@ public class GUIController {
         }
     }
 
-    private void fillAnswerTableView(Student student) {
+    private void fillAnswerListView(Student student) {
         ObservableList<Node> items = answerListView.getItems();
         items.clear();
         testController.getQuestionToAnswers()
@@ -98,7 +172,7 @@ public class GUIController {
                 });
     }
 
-    private void fillQuestionTableView(List<Question> questions) {
+    private void fillQuestionListView(List<Question> questions) {
         questionListView.getItems().clear();
 
         questionListView.setStyle("-fx-fit-to-width: true;");
@@ -134,7 +208,7 @@ public class GUIController {
         String studentName = selection.split("\\. ")[1];
         testController.getStudentList().stream()
                 .filter(student -> student.getName().equals(studentName))
-                .findFirst().ifPresent(this::fillAnswerTableView);
+                .findFirst().ifPresent(this::fillAnswerListView);
     }
 
     public void setRightAnswersMode() {
@@ -148,8 +222,13 @@ public class GUIController {
                     ChoiceBox<String> answersChoiceBox = fillChoiceBoxWithPossibleAnswers(i);
                     answersChoiceBox.getProperties().put("i", i);
                     answersChoiceBox.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, null, new BorderWidths(0.1))));
-                    answersChoiceBox.setOnAction(this::setRightAnswer);
                     rightAnswersChoiceBoxes.add(answersChoiceBox);
+
+                    if (rightAnswers[i] != null && !rightAnswers[i].equals("null")) {
+                        answersChoiceBox.setValue(rightAnswers[i]);
+                    }
+
+                    answersChoiceBox.setOnAction(this::setRightAnswer);
                 }
 
             }
@@ -162,7 +241,6 @@ public class GUIController {
             setRightAnswersButton.setText("Ustaw poprawne odp");
             studentSelector.setDisable(false);
             selectStudent();
-            System.out.println("rightAnswers=" + Arrays.toString(rightAnswers));
         }
     }
 
@@ -171,6 +249,7 @@ public class GUIController {
         ChoiceBox<String> choiceBox = new ChoiceBox<>();
         SortedSet<String> possibleAnswers = new TreeSet<>(testController.getAnswersToQuestion(i));
         choiceBox.getItems().addAll(possibleAnswers);
+        choiceBox.getItems().add("BRAK");
         return choiceBox;
     }
 
@@ -179,6 +258,8 @@ public class GUIController {
         ChoiceBox<String> choiceBox = (ChoiceBox<String>) actionEvent.getSource();
         int i = (int) choiceBox.getProperties().get("i");
         rightAnswers[i] = choiceBox.getValue();
+        System.out.printf("Putting this into preferences: %s - %s%n", filename, Arrays.toString(rightAnswers));
+        preferences.put(filename, Arrays.toString(rightAnswers));
     }
 
 }
